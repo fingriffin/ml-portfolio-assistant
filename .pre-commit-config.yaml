@@ -17,3 +17,4 @@ repos:
         entry: pyright
         language: system
         types: [ python ]
+        files: ^src/.*\.py$

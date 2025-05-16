@@ -1,0 +1,19 @@
+repos:
+  - repo: https://github.com/pre-commit/mirrors-pylint
+    rev: v3.0.0a5
+    hooks:
+      - id: pylint
+
+  - repo: https://github.com/charliermarsh/ruff-pre-commit
+    rev: v0.11.10
+    hooks:
+      - id: ruff
+        args: [--fix]  # auto-fix where possible
+
+  - repo: local
+    hooks:
+      - id: pyright
+        name: Run Pyright type checker
+        entry: pyright
+        language: system
+        types: [ python ]

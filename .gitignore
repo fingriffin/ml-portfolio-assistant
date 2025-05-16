@@ -1,0 +1,9 @@
+# Python artifacts
+__pycache__/
+*.pyc
+
+# Virtual environment
+.venv/
+
+# Data (we'll refine this later)
+data/

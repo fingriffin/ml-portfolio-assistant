@@ -4,7 +4,7 @@ from pathlib import Path
 from sqlite3 import Connection
 from typing import Any, Dict, Optional
 import yaml
-from schema.funds_metadata import FundsMetadataSchema
+from schema.fund_metadata import FundMetadataSchema
 
 def get_project_root() -> Path:
     """
@@ -34,11 +34,11 @@ def load_config_funds(config_path: Optional[Path] = None) -> Dict[str, Dict[str,
     """
     Loads fund metadata from a YAML configuration file.
 
-    :param config_path: Optional path to the YAML config file. If None, defaults to 'config/funds_metadata.yml' at project root.
+    :param config_path: Optional path to the YAML config file. If None, defaults to 'config/fund_metadata.yml' at project root.
     :return: A list of dictionaries, each representing a fund's metadata
     """
     if config_path is None:
-        config_path = get_project_root() / "config" / "funds_metadata.yml"
+        config_path = get_project_root() / "config" / "fund_metadata.yml"
 
     with config_path.open("r", encoding="utf-8") as file:
         funds = yaml.safe_load(file)
@@ -50,7 +50,7 @@ def validate_fund_metadata(funds: Dict[str, Dict[str, Any]]) -> None:
     Validates a dictionary of fund metadata entries against the required schema.
 
     Each fund is expected to be a dictionary with a specific set of required fields and types,
-    as defined in FundsMetadataSchema.REQUIRED_FIELDS.
+    as defined in FundMetadataSchema.REQUIRED_FIELDS.
 
     Each fund is also checked for unexpected fields and values of fields.
 
@@ -60,7 +60,7 @@ def validate_fund_metadata(funds: Dict[str, Dict[str, Any]]) -> None:
                         in the schema.
     :return: None.
     """
-    required_fields = FundsMetadataSchema.REQUIRED_FIELDS
+    required_fields = FundMetadataSchema.REQUIRED_FIELDS
     allowed_fields_set = set(required_fields.keys())
 
     for fund_key, fund_data in funds.items():
@@ -91,7 +91,7 @@ def validate_fund_metadata(funds: Dict[str, Dict[str, Any]]) -> None:
                 )
 
         # Check for allowed value constraints
-        allowed_values = FundsMetadataSchema.ALLOWED_VALUES
+        allowed_values = FundMetadataSchema.ALLOWED_VALUES
         for field, valid_options in allowed_values.items():
             if fund_data.get(field) not in valid_options:
                 raise ValueError(

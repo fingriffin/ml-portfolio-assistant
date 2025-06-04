@@ -1,6 +1,6 @@
 """Defines the schema for fund metadata used throughout the project."""
 
-class FundsMetadataSchema:
+class FundMetadataSchema:
     # Required fields and their dtypes
     REQUIRED_FIELDS = {
         "ticker": str,

@@ -5,5 +5,13 @@ __pycache__/
 # Virtual environment
 .venv/
 
-# Data (we'll refine this later)
-data/
+# Ignore everything in data/
+data/*
+
+# Keep subfolders
+!data/sqlite/
+
+# Ignore specific database artifacts
+data/sqlite/*.sqlite3
+data/sqlite/*.sqlite3-wal
+data/sqlite/*.sqlite3-shm

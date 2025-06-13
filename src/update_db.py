@@ -4,7 +4,9 @@ from pathlib import Path
 from sqlite3 import Connection
 from typing import Any, Dict, Optional
 import yaml
-from schema.fund_metadata import FundMetadataSchema
+from datetime import datetime
+from schema import FundMetadataSchema
+from database import DatabaseStatement
 
 def get_project_root() -> Path:
     """
@@ -99,7 +101,61 @@ def validate_fund_metadata(funds: Dict[str, Dict[str, Any]]) -> None:
                     f"Allowed values: {valid_options}"
                 )
 
+def sync_db_to_fund_metadata(conn: sqlite3.Connection,
+                             fund_metadata: Dict[str, Dict[str, Any]]
+                             ) -> None:
+    """
+    Syncs SQLite3 database to fund metadata.
+
+    :param conn: SQLite3 database connection.
+    :param fund_metadata: Dictionary where keys are fund identifiers and values are metadata dictionaries.
+    :return: None.
+    """
+    # Create table if it doesn't exist
+    curr = conn.cursor()
+    curr.execute(DatabaseStatement.create_metadata_table())
+
+    # Pull user-updated fields from database
+    fields = list(FundMetadataSchema.REQUIRED_FIELDS_SQL.keys())
+    fields.remove("last_updated") # Auto-updated field
+
+    tickers = []
+    for fund_id, metadata in fund_metadata.items():
+        ticker = metadata.get("ticker")
+        if ticker:
+            tickers.append(ticker)
+            curr.execute(DatabaseStatement.query_fund_metadata(ticker))
+
+        existing_db_row = curr.fetchone()
+
+        # Insert new fund if it doesn't exist in db, or if there are differences
+        if existing_db_row is None:
+            new_data_with_time = metadata.copy()
+            new_data_with_time["last_updated"] = datetime.now().isoformat()
+            values = tuple(new_data_with_time[k] for k in FundMetadataSchema.REQUIRED_FIELDS_SQL)
+            curr.execute(DatabaseStatement.upsert_fund_metadata(), values)
+        else:
+            # Convert db row to dict for comparison
+            existing_db_row_dict = dict(zip(fields,existing_db_row[:-1])) # Exclude last_updated field
+            if any(metadata[field]!= existing_db_row_dict.get(field) for field in fields):
+                new_data_with_time = metadata.copy()
+                new_data_with_time["last_updated"] = datetime.now().isoformat()
+                values = tuple(new_data_with_time[k] for k in FundMetadataSchema.REQUIRED_FIELDS_SQL)
+                curr.execute(DatabaseStatement.upsert_fund_metadata(do_update=True), values)
+
+    # Pull existing tickers in db
+    curr.execute(DatabaseStatement.get_all_tickers())
+    db_tickers = [row[0] for row in curr.fetchall()]
+    # Remove tickers in db that are no longer in fund metadata
+    for ticker in db_tickers:
+        if ticker not in tickers:
+            curr.execute(DatabaseStatement.remove_fund_metadata(ticker))
+
+    conn.commit()
+    return None
 
 if __name__ == "__main__":
     data = load_config_funds()
     validate_fund_metadata(data)
+    connection = get_db_connection()
+    sync_db_to_fund_metadata(connection, data)
